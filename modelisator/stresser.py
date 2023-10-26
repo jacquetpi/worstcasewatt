@@ -10,7 +10,7 @@ class Stresser(object):
         self.delay    = 1
         self.display  = True
         self.duration = 15
-        self.output_csv = 'wcw.csv'
+        self.output_csv = None # 'wcw.csv'
         self.output_nl  = '\n'
         self.output_init()
 
@@ -50,11 +50,13 @@ class Stresser(object):
         return subproc
 
     def output_init(self):
+        if self.output_csv is None: return
         header = 'label,iteration,target_core,target_level,noise_core,noise_level,TODO'
         with open(self.output_csv, 'w') as f: 
             f.write(header + self.output_nl)
 
     def output_append(self, iteration: int, target_core : int, noise_core : int, target_level : int, noise_level : int, usage_global : float, usage_cores : dict, usage_noise : dict, watt_global : dict):
+        if self.output_csv is None: return
         label= str(target_core) + '(' + str(target_level) + '%)_' + str(noise_core) + '(' + str(noise_level) + '%)'
         line = label + ',' + str(iteration) + ',' +\
             str(target_core) + ',' + str(target_level) + ',' +\
