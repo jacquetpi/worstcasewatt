@@ -1,5 +1,5 @@
-import getopt, sys, json
-from modelisator.stresser import Stresser
+import getopt, sys
+from generator.stresser import Stresser
 
 def print_usage():
     print("")

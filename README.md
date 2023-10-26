@@ -9,5 +9,5 @@ TODO
 ## Usage
 
 ```bash
-sudo python3 -m modelisator
+sudo python3 -m generator
 ```

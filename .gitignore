@@ -1,8 +1,7 @@
 # Misc
 
 *.csv
-measures/
-measures-stress/
+_measures/*
 venv/
 
 ### Python ###

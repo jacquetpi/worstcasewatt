@@ -2,7 +2,7 @@ import re, time
 from os import listdir
 
 ROOT_FS       ='/sys/class/powercap/'
-PRECISION     = 5
+PRECISION     = 2
 
 class ReaderRapl(object):
 

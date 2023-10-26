@@ -51,7 +51,7 @@ class CpuTimeProcess(object):
         delt_not_idle = curr_not_idle - prev_not_idle
         delt_time     = (curr_timestamp_ns - prev_timestamp_ns) // (10**(9-self.system_power)) # compute delta and convert from ns to ticks
         if delt_time>0:
-            return round(delt_not_idle/delt_time,5)
+            return round((delt_not_idle/delt_time)*100,2)
         return 0
 
     def set_time(self, not_idle : int):
@@ -73,24 +73,28 @@ class ReaderCpu(object):
         measures_dict = {}
         if str(pid) not in self.hist_process: self.hist_process[str(pid)] = CpuTimeProcess()
 
-        # Read CPU time of process
-        root = '/proc/' + str(pid)
-        with open(root + '/stat', 'r') as f:
-            split = f.readlines()[0].split()
-        cumul = sum([int(split[SYSFS_STATS_PID_KEYS[not_idle_key]]) for not_idle_key in SYSFS_STATS_PID_NTID])
-        
-        individual_usage = self.hist_process[str(pid)].read_usage_and_update(not_idle=cumul) # Is None on first call
-        if individual_usage != None:
-            measures_dict[str(pid)] = individual_usage
+        try:
+            # Read CPU time of process
+            root = '/proc/' + str(pid)
+            with open(root + '/stat', 'r') as f:
+                split = f.readlines()[0].split()
+            cumul = sum([int(split[SYSFS_STATS_PID_KEYS[not_idle_key]]) for not_idle_key in SYSFS_STATS_PID_NTID])
+            
+            individual_usage = self.hist_process[str(pid)].read_usage_and_update(not_idle=cumul) # Is None on first call
+            if individual_usage != None:
+                measures_dict[str(pid)] = individual_usage
 
-        # Find children for recursivity
-        childloc = [root + '/task/' + tid + '/children' for tid in listdir(root + '/task')]
-        children = list()
-        for loc in childloc:
-            with open(loc, 'r') as f: children.extend([int(pid)for pid in f.read().split()])
-        for child in children: 
-            measures_dict.update(self.get_usage_per_core_of_pid(child))
-        return measures_dict
+            # Find children for recursivity
+            childloc = [root + '/task/' + tid + '/children' for tid in listdir(root + '/task')]
+            children = list()
+            for loc in childloc:
+                with open(loc, 'r') as f: children.extend([int(pid)for pid in f.read().split()])
+            for child in children: 
+                measures_dict.update(self.get_usage_per_core_of_pid(child))
+            return measures_dict
+        except (FileNotFoundError,ProcessLookupError): # PID do not exist (anymore?)
+            return {}
+
 
     def get_usage_global(self):
         with open(SYSFS_STAT, 'r') as f:
@@ -128,7 +132,7 @@ class ReaderCpu(object):
             delta_idle     = idle - prev_idle
             delta_total    = (idle + not_idle) - (prev_idle + prev_not_idle)
             if delta_total>0: # Manage overflow
-                cpu_usage = ((delta_total-delta_idle)/delta_total)*100
+                cpu_usage = round(((delta_total-delta_idle)/delta_total)*100,2)
         
         if update_history: hist_object.set_time(idle=idle, not_idle=not_idle)
         return cpu_usage
@@ -139,5 +143,3 @@ class ReaderCpu(object):
             with open(SYSFS_FREQ.replace('{core}', str(cpu)), 'r') as f:
                 cumulated_cpu_freq+= int(f.read())
         return round(cumulated_cpu_freq/len(server_cpu_list), 2)
-
-r = ReaderCpu()
