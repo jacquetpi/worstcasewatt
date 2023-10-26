@@ -9,5 +9,5 @@ TODO
 ## Usage
 
 ```bash
-python3 -m todo
+sudo python3 -m modelisator
 ```
