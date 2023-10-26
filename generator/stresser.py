@@ -74,8 +74,9 @@ class Stresser(object):
 
     def launch_stress(self, core : int , level : int = 100) -> None:
         if core<=0: 
-            return None
-        command = 'stress-ng --cpu ' + str(core) + ' -l ' + str(level) + ' --timeout ' + str(self.duration)
+            command = 'sleep ' + str(self.duration)
+        else:
+            command = 'stress-ng --cpu ' + str(core) + ' -l ' + str(level) + ' --timeout ' + str(self.duration)
         subproc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         #print("shell command result :", subproc.stdout.read().decode('ascii'))
         return subproc
@@ -88,7 +89,7 @@ class Stresser(object):
 
     def output_init(self):
         if self.output_file_exp is None: return
-        header_exp  = 'label,iteration,target_core,target_level,noise_core,noise_level,global_usage,global_watt,measure_id' 
+        header_exp  = 'situation_id,target_id,noise_id,target_core,target_level,noise_core,noise_level,iteration,global_usage,global_watt,measure_id' 
         header_data = 'measure_id,type,name,value'
         with open(self.output_file_exp, 'w')  as f: f.write(header_exp + self.output_nl)
         with open(self.output_file_data, 'w') as f: f.write(header_data + self.output_nl)
@@ -96,12 +97,18 @@ class Stresser(object):
     def output_append(self, iteration: int, target_core : int, noise_core : int, target_level : int, noise_level : int, usage_global : float, usage_cores : dict, usage_process : dict, usage_noise : dict, watt_global : dict):
         if self.output_file_exp is None: return
         
-        label= str(target_core) + '-' + str(target_level) + '_' + str(noise_core) + '-' + str(noise_level) + '-' + str(iteration)
-        measure_id = base64.b64encode(label.encode('ascii')).decode('ascii') 
+        label_target = str(target_core) + '-' + str(target_level)
+        label_noise  = str(noise_core) + '-' + str(noise_level)
+        label        = label_target + '_' + label_noise
+        target_id    = base64.b64encode((label_target).encode('ascii')).decode('ascii')
+        noise_id     = base64.b64encode((label_noise).encode('ascii')).decode('ascii')
+        situation_id = base64.b64encode((label).encode('ascii')).decode('ascii') 
+        measure_id   = base64.b64encode((label + '-' + str(iteration)).encode('ascii')).decode('ascii') 
 
-        line_exp  = label + ',' + str(iteration) + ',' +\
+        line_exp  = situation_id + ',' + target_id + ',' + noise_id + ',' +\
             str(target_core) + ',' + str(target_level) + ',' +\
             str(noise_core) + ',' + str(noise_level) + ',' +\
+            str(iteration) + ',' +\
             str(usage_global) + ',' + str(watt_global['package-global']) + ',' + measure_id
 
         with open(self.output_file_exp, 'a')  as f: f.write(line_exp + self.output_nl)
